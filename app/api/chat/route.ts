@@ -35,7 +35,7 @@ Keep your responses focused on writing and document editing. When appropriate, r
         ...messages,
         systemMessage,
       ],
-      temperature: 0.2,
+      temperature: 0.5,
     });
 
     return NextResponse.json({

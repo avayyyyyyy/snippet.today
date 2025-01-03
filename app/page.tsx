@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import Editor from "@/app/components/Editor";
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown from "react-markdown";
+import { initialBody } from "@/initialBody";
 
 interface Document {
   id: string;
@@ -229,12 +230,26 @@ const ChatPopup = ({
                       {message.role === "assistant" ? (
                         <ReactMarkdown
                           components={{
-                            p: ({ children }) => <p className="mb-2">{children}</p>,
-                            ul: ({ children }) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
-                            ol: ({ children }) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
-                            li: ({ children }) => <li className="mb-1">{children}</li>,
+                            p: ({ children }) => (
+                              <p className="mb-2">{children}</p>
+                            ),
+                            ul: ({ children }) => (
+                              <ul className="list-disc ml-4 mb-2">
+                                {children}
+                              </ul>
+                            ),
+                            ol: ({ children }) => (
+                              <ol className="list-decimal ml-4 mb-2">
+                                {children}
+                              </ol>
+                            ),
+                            li: ({ children }) => (
+                              <li className="mb-1">{children}</li>
+                            ),
                             code: ({ children }) => (
-                              <code className="bg-gray-100 px-1 py-0.5 rounded">{children}</code>
+                              <code className="bg-gray-100 px-1 py-0.5 rounded">
+                                {children}
+                              </code>
                             ),
                             pre: ({ children }) => (
                               <pre className="bg-gray-100 p-2 rounded-md my-2 overflow-x-auto">
@@ -312,7 +327,7 @@ export default function Home() {
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
   const [documents, setDocuments] = useState<Document[]>([
-    { id: "1", name: "Untitled Document", content: "" },
+    { id: "1", name: "Untitled Document", content: initialBody },
   ]);
   const [activeDocId, setActiveDocId] = useState("1");
   const [isRenaming, setIsRenaming] = useState<string | null>(null);
@@ -435,21 +450,28 @@ export default function Home() {
     if (!message.trim() || !openAIKey) return;
 
     // Get current document content
-    const documentContent = localStorage.getItem(
-      activeDocId ? `snippet-content-${activeDocId}` : `snippet-content`
-    );
+    const documentContent = localStorage.getItem("snippet-documents");
 
     const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = documentContent || "";
+    tempDiv.innerHTML =
+      JSON.parse(documentContent || "[]").find(
+        (doc: Document) => doc.id === activeDocId
+      )?.content || "";
     const plainTextContent = tempDiv.textContent || tempDiv.innerText || "";
+
+    console.log(plainTextContent);
 
     // Check word count
     const wordCount = plainTextContent.trim().split(/\s+/).length;
     if (wordCount > 750) {
-      setMessages(prev => [...prev, {
-        role: "assistant",
-        content: "⚠️ Your document exceeds the 750 word limit. Please reduce the content to analyze the document."
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            "⚠️ Your document exceeds the 750 word limit. Please reduce the content to analyze the document.",
+        },
+      ]);
       return;
     }
 
