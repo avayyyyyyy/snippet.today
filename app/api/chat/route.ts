@@ -17,10 +17,6 @@ export async function POST(request: NextRequest) {
       apiKey: apiKey,
     });
 
-    console.log(systemMessage);
-
-    // console.log(messages);
-
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
