@@ -1,39 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ✨ snippet.today
 
-## Getting Started
+> A minimalist, privacy-focused writing companion that works entirely in your browser.
 
-First, run the development server:
+<div align="center">
+  <img src="https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js" alt="Next.js" />
+  <img src="https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/TailwindCSS-3-38B2AC?style=flat-square&logo=tailwind-css" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/OpenAI-GPT--4-412991?style=flat-square&logo=openai" alt="OpenAI GPT-4" />
+</div>
 
+## 🚀 Features
+
+### 📝 Writing Experience
+- **Rich Text Editor** with markdown support
+- **Command Menu** (Cmd/Ctrl + /) for quick formatting
+- **Multiple Documents** with auto-save
+- **Real-time Word Counter**
+- **Distraction-free Interface**
+
+### 🤖 AI Assistant
+- **Writing Suggestions** powered by GPT-4
+- **Grammar & Style Checks**
+- **Content Ideas** generation
+- **Document Analysis**
+
+### 🖼️ Media Support
+- **Image Embedding** via drag & drop
+- **Resize Controls** for images
+- **Copy & Paste** support
+- **Inline Display**
+
+### 🔒 Privacy First
+- **Local Storage** - All data stays in your browser
+- **No Account Needed** - Start writing immediately
+- **Your API Key** - Use your own OpenAI key
+- **No Tracking** - We respect your privacy
+
+## 🛠️ Quick Start
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/snippet.today.git
+cd snippet.today
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Run the development server:
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 💡 Usage Tips
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Use `Cmd/Ctrl + /` to open the command menu
+- Create new documents using the sidebar
+- Drag and drop images directly into the editor
+- Use the AI assistant for writing help
+- Export your work as markdown files
 
-## Learn More
+## 🔧 Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+- [Next.js 14](https://nextjs.org/) - React Framework
+- [TypeScript](https://www.typescriptlang.org/) - Type Safety
+- [TailwindCSS](https://tailwindcss.com/) - Styling
+- [TipTap](https://tiptap.dev/) - Rich Text Editor
+- [OpenAI GPT-4](https://openai.com/) - AI Assistant
+- [Framer Motion](https://www.framer.com/motion/) - Animations
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🤝 Contributing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## Deploy on Vercel
+## 📄 License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# snippet.today
-# snippet.today
-# snippet.today
+## 🙏 Acknowledgments
+
+- [TipTap](https://tiptap.dev/) for the amazing editor
+- [OpenAI](https://openai.com/) for GPT-4 API
+- [Vercel](https://vercel.com/) for hosting
+
+---
+
+<div align="center">
+  Made with ❤️ by <a href="https://x.com/shubhcodes">@shubhcodes</a>
+</div>
