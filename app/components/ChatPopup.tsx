@@ -1,27 +1,33 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Wand2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Wand2 } from "lucide-react";
 
 interface Message {
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
 }
 
-export default function ChatPopup({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+export default function ChatPopup({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    const savedApiKey = localStorage.getItem('openai_api_key');
+    const savedApiKey = localStorage.getItem("openai_api_key");
     if (savedApiKey) {
       setApiKey(savedApiKey);
     }
 
-    const savedMessages = localStorage.getItem('chat_messages');
+    const savedMessages = localStorage.getItem("chat_messages");
     if (savedMessages) {
       setMessages(JSON.parse(savedMessages));
     }
@@ -38,28 +44,28 @@ export default function ChatPopup({ isOpen, onClose }: { isOpen: boolean; onClos
   }, [messages]);
 
   useEffect(() => {
-    localStorage.setItem('chat_messages', JSON.stringify(messages));
+    localStorage.setItem("chat_messages", JSON.stringify(messages));
   }, [messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const newMessage: Message = { role: 'user', content: input };
-    setMessages(prev => [...prev, newMessage]);
-    setInput('');
+    const newMessage: Message = { role: "user", content: input };
+    setMessages((prev) => [...prev, newMessage]);
+    setInput("");
     setIsLoading(true);
 
     try {
       const lastMessages = messages.slice(-10);
-      const response = await fetch('/api/chat', {
-        method: 'POST',
+      const response = await fetch("/api/chat", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           messages: [...lastMessages, newMessage],
@@ -74,13 +80,14 @@ export default function ChatPopup({ isOpen, onClose }: { isOpen: boolean; onClos
       }
 
       const assistantMessage = data.choices[0].message;
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Something went wrong';
-      setMessages(prev => [
+      const errorMessage =
+        error instanceof Error ? error.message : "Something went wrong";
+      setMessages((prev) => [
         ...prev,
         {
-          role: 'assistant',
+          role: "assistant",
           content: `Error: ${errorMessage}. Please try again.`,
         },
       ]);
@@ -92,7 +99,7 @@ export default function ChatPopup({ isOpen, onClose }: { isOpen: boolean; onClos
   const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setApiKey(value);
-    localStorage.setItem('openai_api_key', value);
+    localStorage.setItem("openai_api_key", value);
   };
 
   const writingPrompts = [
@@ -148,11 +155,15 @@ export default function ChatPopup({ isOpen, onClose }: { isOpen: boolean; onClos
                     Enter your OpenAI API Key
                   </h3>
                   <p className="text-sm text-gray-600">
-                    Your API key is stored locally and never sent to our servers.
+                    Your API key is stored locally and never sent to our
+                    servers.
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="api-key" className="block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="api-key"
+                    className="block text-sm font-medium text-gray-700"
+                  >
                     API Key
                   </label>
                   <input
@@ -164,14 +175,14 @@ export default function ChatPopup({ isOpen, onClose }: { isOpen: boolean; onClos
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                   <p className="text-xs text-gray-500">
-                    Don't have an API key? Get one from{' '}
+                    Don&apos;t have an API key? Get one from{" "}
                     <a
                       href="https://platform.openai.com/api-keys"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-500 hover:text-blue-600"
                     >
-                      OpenAI's website
+                      OpenAI&apos;s website
                     </a>
                   </p>
                 </div>
@@ -186,7 +197,7 @@ export default function ChatPopup({ isOpen, onClose }: { isOpen: boolean; onClos
                       <Wand2 className="text-white" size={20} />
                     </div>
                     <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 max-w-[80%]">
-                      Hi! I'm your writing assistant. I can help you:
+                      Hi! I&apos;m your writing assistant. I can help you:
                       <ul className="list-disc ml-4 mt-2 space-y-1.5">
                         <li>Improve your writing style and clarity</li>
                         <li>Fix grammar and punctuation</li>
@@ -195,7 +206,9 @@ export default function ChatPopup({ isOpen, onClose }: { isOpen: boolean; onClos
                         <li>Make your content more engaging</li>
                       </ul>
                       <div className="mt-4 space-y-2">
-                        <p className="font-medium text-gray-900">Try asking me:</p>
+                        <p className="font-medium text-gray-900">
+                          Try asking me:
+                        </p>
                         <div className="space-y-2">
                           {writingPrompts.map((prompt, index) => (
                             <button
@@ -215,15 +228,17 @@ export default function ChatPopup({ isOpen, onClose }: { isOpen: boolean; onClos
                     <div
                       key={index}
                       className={`flex items-start gap-3 ${
-                        message.role === 'user' ? 'flex-row-reverse' : ''
+                        message.role === "user" ? "flex-row-reverse" : ""
                       }`}
                     >
                       <div
                         className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center ${
-                          message.role === 'user' ? 'bg-gray-200' : 'bg-blue-500'
+                          message.role === "user"
+                            ? "bg-gray-200"
+                            : "bg-blue-500"
                         }`}
                       >
-                        {message.role === 'user' ? (
+                        {message.role === "user" ? (
                           <span className="text-gray-600">👤</span>
                         ) : (
                           <Wand2 className="text-white" size={20} />
@@ -231,9 +246,9 @@ export default function ChatPopup({ isOpen, onClose }: { isOpen: boolean; onClos
                       </div>
                       <div
                         className={`rounded-lg p-4 text-sm max-w-[80%] ${
-                          message.role === 'user'
-                            ? 'bg-blue-50 text-gray-900'
-                            : 'bg-gray-50 text-gray-700'
+                          message.role === "user"
+                            ? "bg-blue-50 text-gray-900"
+                            : "bg-gray-50 text-gray-700"
                         }`}
                       >
                         {message.content}
@@ -260,7 +275,7 @@ export default function ChatPopup({ isOpen, onClose }: { isOpen: boolean; onClos
                   className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 text-sm resize-none"
                   rows={2}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
+                    if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
                       handleSubmit(e);
                     }
@@ -280,4 +295,4 @@ export default function ChatPopup({ isOpen, onClose }: { isOpen: boolean; onClos
       </motion.div>
     </AnimatePresence>
   );
-} 
+}

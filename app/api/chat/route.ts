@@ -4,7 +4,7 @@ import OpenAI from "openai";
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, systemMessage, apiKey } = await request.json();
+    const { messages, apiKey } = await request.json();
 
     if (!apiKey) {
       return NextResponse.json(
@@ -47,12 +47,13 @@ Keep your responses focused on writing and document editing. When appropriate, r
         }
       ]
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error:", error);
     const errorMessage = error instanceof Error ? error.message : "An error occurred";
+    const errorStatus = error instanceof Error && 'status' in error ? Number((error as { status: number }).status) : 500;
     return NextResponse.json(
       { error: errorMessage },
-      { status: error instanceof Error && 'status' in error ? (error as any).status : 500 }
+      { status: errorStatus }
     );
   }
 }

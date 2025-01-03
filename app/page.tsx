@@ -164,14 +164,14 @@ const ChatPopup = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 />
                 <p className="text-xs text-gray-500">
-                  Don't have an API key? Get one from{" "}
+                  Don&apos;t have an API key? Get one from{" "}
                   <a
                     href="https://platform.openai.com/api-keys"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-500 hover:text-blue-600"
                   >
-                    OpenAI's website
+                    OpenAI&apos;s website
                   </a>
                 </p>
               </div>
@@ -459,11 +459,6 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const clearChat = () => {
-    setMessages([]);
-    localStorage.removeItem("snippet-chat");
   };
 
   return (

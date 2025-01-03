@@ -113,105 +113,12 @@ const ResizableImage = Image.extend({
   },
 });
 
-interface PasteOptionsProps {
-  onClose: () => void;
-  onEmbed: () => void;
-  onKeepLink: () => void;
-  type: "image" | "link";
-  metadata?: {
-    title?: string;
-    description?: string;
-    image?: string;
-    url: string;
-  };
-}
-
-function PasteOptions({
-  onClose,
-  onEmbed,
-  onKeepLink,
-  type,
-  metadata,
-}: PasteOptionsProps) {
-  if (type !== "image") return null;
-
-  return (
-    <>
-      <div
-        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[150]"
-        onClick={onClose}
-      />
-      <div className="fixed top-8 left-1/2 -translate-x-1/2 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-[200] w-[480px] max-w-[90vw]">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-medium">🖼️ Paste Image</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-
-        <div className="mb-4">
-          <div className="border border-gray-100 rounded-lg p-4 bg-gray-50">
-            <img
-              src={metadata?.url || ""}
-              alt=""
-              className="w-full h-48 object-contain rounded"
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={onEmbed}
-            className="flex-1 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm font-medium transition-colors"
-          >
-            Embed image
-          </button>
-          <button
-            onClick={onKeepLink}
-            className="flex-1 px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg text-sm font-medium transition-colors"
-          >
-            Keep as link
-          </button>
-        </div>
-      </div>
-    </>
-  );
-}
-
 export default function Editor({
   onWordCountChange,
   documentId = "1",
 }: EditorProps) {
   const [showCommands, setShowCommands] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
-  const [pasteOptions, setPasteOptions] = useState<{
-    show: boolean;
-    type: "image" | "link";
-    position: { x: number; y: number };
-    metadata?: {
-      title?: string;
-      description?: string;
-      image?: string;
-      url: string;
-    };
-    content?: string;
-  } | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
 
   const countWordsAndChars = useCallback(
@@ -223,27 +130,7 @@ export default function Editor({
     [onWordCountChange]
   );
 
-  const fetchLinkMetadata = async (url: string) => {
-    try {
-      const response = await fetch(
-        `https://api.microlink.io?url=${encodeURIComponent(url)}`
-      );
-      const data = await response.json();
-      if (data.status === "success") {
-        return {
-          title: data.data.title,
-          description: data.data.description,
-          image: data.data.image?.url,
-          url,
-        };
-      }
-    } catch (error) {
-      console.error("Error fetching metadata:", error);
-    }
-    return { url };
-  };
-
-  const handlePaste = async (view: any, event: ClipboardEvent) => {
+  const handlePaste = (view: unknown, event: ClipboardEvent) => {
     if (!event.clipboardData || !editor) return false;
 
     const text = event.clipboardData.getData("text/plain");
@@ -489,7 +376,7 @@ export default function Editor({
 
       // Calculate position
       let y = top - editorBounds.top + 24;
-      let x = left - editorBounds.left;
+      const x = left - editorBounds.left;
 
       // Check if menu would go off-screen
       const menuHeight = 300; // Approximate height of command menu
@@ -525,9 +412,6 @@ export default function Editor({
         a.href = url;
         a.download = "document.html";
         a.click();
-        break;
-      case "format":
-        editor.commands.normalizeNodes();
         break;
       case "heading1":
         editor.commands.toggleHeading({ level: 1 });
@@ -815,84 +699,6 @@ export default function Editor({
           onClose={() => setShowCommands(false)}
           onCommand={handleCommand}
           position={menuPosition}
-        />
-      )}
-
-      {pasteOptions && pasteOptions.show && (
-        <PasteOptions
-          type={pasteOptions.type}
-          position={pasteOptions.position}
-          metadata={pasteOptions.metadata}
-          onClose={() => setPasteOptions(null)}
-          onEmbed={() => {
-            if (pasteOptions.type === "image") {
-              const img = document.createElement("img");
-              img.src = pasteOptions.metadata?.url || pasteOptions.content!;
-              img.onload = () => {
-                const maxWidth = 320;
-                const width = Math.min(img.width, maxWidth);
-                const height = Math.round(width * (img.height / img.width));
-
-                editor
-                  ?.chain()
-                  .focus()
-                  .insertContent({
-                    type: "resizable-image",
-                    attrs: {
-                      src: pasteOptions.metadata?.url || pasteOptions.content!,
-                      width,
-                      height,
-                    },
-                  })
-                  .run();
-              };
-            } else {
-              // Create link preview HTML
-              const previewHtml = `
-                <div class="link-preview my-2">
-                  <div id="link-preview-${Date.now()}" data-url="${pasteOptions.content!}"></div>
-                </div>
-              `;
-              editor?.chain().focus().insertContent(previewHtml).run();
-
-              // After inserting the preview, render the ReactTinyLink component
-              const container = document.querySelector(
-                `#link-preview-${Date.now()}`
-              );
-              if (container) {
-                const root = document.createElement("div");
-                container.appendChild(root);
-
-                // @ts-ignore
-                ReactDOM.render(
-                  <ReactTinyLink
-                    cardSize="small"
-                    showGraphic={true}
-                    maxLine={2}
-                    minLine={1}
-                    url={pasteOptions.content!}
-                    proxyUrl="https://cors-anywhere.herokuapp.com"
-                  />,
-                  root
-                );
-              }
-            }
-            setPasteOptions(null);
-          }}
-          onKeepLink={() => {
-            editor
-              ?.chain()
-              .focus()
-              .insertContent(
-                `<a href="${pasteOptions.content!}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">${
-                  pasteOptions.type === "image"
-                    ? pasteOptions.metadata?.title || "Image"
-                    : pasteOptions.content!
-                }</a>`
-              )
-              .run();
-            setPasteOptions(null);
-          }}
         />
       )}
     </div>

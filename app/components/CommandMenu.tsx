@@ -6,15 +6,6 @@ interface CommandMenuProps {
   position: { x: number; y: number };
 }
 
-interface Command {
-  id: string;
-  label: string;
-  description: string;
-  icon: string;
-  category: string;
-  shortcut?: string;
-}
-
 const commandCategories = [
   {
     name: "Basic blocks",
@@ -113,13 +104,6 @@ const commandCategories = [
         label: "Export",
         description: "Save as HTML file",
         icon: "📥",
-        category: "Actions",
-      },
-      {
-        id: "format",
-        label: "Format",
-        description: "Clean up document formatting",
-        icon: "✨",
         category: "Actions",
       },
       {
