@@ -354,11 +354,11 @@ export default function Home() {
 
   const deleteDocument = (id: string) => {
     if (documents.length === 1) return; // Prevent deleting the last document
-    
+
     // Remove document content from localStorage
     localStorage.removeItem(`snippet-content-${id}`);
-    
-    const newDocs = documents.filter(doc => doc.id !== id);
+
+    const newDocs = documents.filter((doc) => doc.id !== id);
     setDocuments(newDocs);
     if (activeDocId === id) {
       setActiveDocId(newDocs[0].id);
@@ -374,10 +374,10 @@ export default function Home() {
     if (newFileName.trim()) {
       // Get the old document name
       const oldContent = localStorage.getItem(`snippet-content-${id}`);
-      
+
       // Update documents array
       setDocuments(
-        documents.map(doc =>
+        documents.map((doc) =>
           doc.id === id ? { ...doc, name: newFileName.trim() } : doc
         )
       );
@@ -478,14 +478,17 @@ export default function Home() {
   useEffect(() => {
     // Load documents from localStorage on initial render
     const loadDocuments = () => {
-      const savedDocs = localStorage.getItem('snippet-documents');
+      const savedDocs = localStorage.getItem("snippet-documents");
       if (savedDocs) {
         const parsedDocs = JSON.parse(savedDocs);
         setDocuments(parsedDocs);
-        
+
         // Set active document
-        const lastActiveDoc = localStorage.getItem('snippet-active-doc');
-        if (lastActiveDoc && parsedDocs.find(doc => doc.id === lastActiveDoc)) {
+        const lastActiveDoc = localStorage.getItem("snippet-active-doc");
+        if (
+          lastActiveDoc &&
+          parsedDocs.find((doc: Document) => doc.id === lastActiveDoc)
+        ) {
           setActiveDocId(lastActiveDoc);
         } else {
           setActiveDocId(parsedDocs[0].id);
@@ -498,12 +501,12 @@ export default function Home() {
 
   // Add effect to save documents to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('snippet-documents', JSON.stringify(documents));
+    localStorage.setItem("snippet-documents", JSON.stringify(documents));
   }, [documents]);
 
   // Add effect to save active document ID
   useEffect(() => {
-    localStorage.setItem('snippet-active-doc', activeDocId);
+    localStorage.setItem("snippet-active-doc", activeDocId);
   }, [activeDocId]);
 
   return (
