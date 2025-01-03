@@ -359,7 +359,6 @@ export default function Editor({
         const text = editor.getText();
         countWordsAndChars(text);
       }
-      editor.commands.focus("end");
     }
   }, [documentId, editor, countWordsAndChars]);
 

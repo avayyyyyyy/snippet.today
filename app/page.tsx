@@ -349,11 +349,16 @@ export default function Home() {
     };
     setDocuments([...documents, newDoc]);
     setActiveDocId(newDoc.id);
+    localStorage.setItem(`snippet-content-${newDoc.id}`, "");
   };
 
   const deleteDocument = (id: string) => {
     if (documents.length === 1) return; // Prevent deleting the last document
-    const newDocs = documents.filter((doc) => doc.id !== id);
+    
+    // Remove document content from localStorage
+    localStorage.removeItem(`snippet-content-${id}`);
+    
+    const newDocs = documents.filter(doc => doc.id !== id);
     setDocuments(newDocs);
     if (activeDocId === id) {
       setActiveDocId(newDocs[0].id);
@@ -367,11 +372,21 @@ export default function Home() {
 
   const handleRename = (id: string) => {
     if (newFileName.trim()) {
+      // Get the old document name
+      const oldDoc = documents.find(doc => doc.id === id);
+      const oldContent = localStorage.getItem(`snippet-content-${id}`);
+      
+      // Update documents array
       setDocuments(
-        documents.map((doc) =>
+        documents.map(doc =>
           doc.id === id ? { ...doc, name: newFileName.trim() } : doc
         )
       );
+
+      // Update localStorage content key if content exists
+      if (oldContent) {
+        localStorage.setItem(`snippet-content-${id}`, oldContent);
+      }
     }
     setIsRenaming(null);
   };
@@ -460,6 +475,37 @@ export default function Home() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Load documents from localStorage on initial render
+    const loadDocuments = () => {
+      const savedDocs = localStorage.getItem('snippet-documents');
+      if (savedDocs) {
+        const parsedDocs = JSON.parse(savedDocs);
+        setDocuments(parsedDocs);
+        
+        // Set active document
+        const lastActiveDoc = localStorage.getItem('snippet-active-doc');
+        if (lastActiveDoc && parsedDocs.find(doc => doc.id === lastActiveDoc)) {
+          setActiveDocId(lastActiveDoc);
+        } else {
+          setActiveDocId(parsedDocs[0].id);
+        }
+      }
+    };
+
+    loadDocuments();
+  }, []);
+
+  // Add effect to save documents to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('snippet-documents', JSON.stringify(documents));
+  }, [documents]);
+
+  // Add effect to save active document ID
+  useEffect(() => {
+    localStorage.setItem('snippet-active-doc', activeDocId);
+  }, [activeDocId]);
 
   return (
     <div className="h-screen flex flex-col bg-white">
