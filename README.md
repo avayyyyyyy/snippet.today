@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js" alt="Next.js" />
   <img src="https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript" alt="TypeScript" />
   <img src="https://img.shields.io/badge/TailwindCSS-3-38B2AC?style=flat-square&logo=tailwind-css" alt="Tailwind CSS" />
-  <img src="https://img.shields.io/badge/OpenAI-GPT--4-412991?style=flat-square&logo=openai" alt="OpenAI GPT-4" />
+  <img src="https://img.shields.io/badge/OpenAI-GPT--4-412991?style=flat-square&logo=openai" alt="OpenAI GPT-4o-mini" />
 </div>
 
 ## 🚀 Features
@@ -19,7 +19,7 @@
 - **Distraction-free Interface**
 
 ### 🤖 AI Assistant
-- **Writing Suggestions** powered by GPT-4
+- **Writing Suggestions** powered by GPT-4o-mini
 - **Grammar & Style Checks**
 - **Content Ideas** generation
 - **Document Analysis**
