@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Editor from "@/app/components/Editor";
+import ReactMarkdown from 'react-markdown';
 
 interface Document {
   id: string;
@@ -10,7 +11,7 @@ interface Document {
 }
 
 interface Message {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
 }
 
@@ -225,7 +226,28 @@ const ChatPopup = ({
                           : "bg-blue-50"
                       }`}
                     >
-                      {message.content}
+                      {message.role === "assistant" ? (
+                        <ReactMarkdown
+                          components={{
+                            p: ({ children }) => <p className="mb-2">{children}</p>,
+                            ul: ({ children }) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
+                            li: ({ children }) => <li className="mb-1">{children}</li>,
+                            code: ({ children }) => (
+                              <code className="bg-gray-100 px-1 py-0.5 rounded">{children}</code>
+                            ),
+                            pre: ({ children }) => (
+                              <pre className="bg-gray-100 p-2 rounded-md my-2 overflow-x-auto">
+                                {children}
+                              </pre>
+                            ),
+                          }}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
+                      ) : (
+                        message.content
+                      )}
                     </div>
                   </div>
                 ))
@@ -412,23 +434,34 @@ export default function Home() {
   const sendMessage = async (message: string) => {
     if (!message.trim() || !openAIKey) return;
 
+    // Get current document content
+    const documentContent = localStorage.getItem(
+      activeDocId ? `snippet-content-${activeDocId}` : `snippet-content`
+    );
+
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = documentContent || "";
+    const plainTextContent = tempDiv.textContent || tempDiv.innerText || "";
+
+    // Check word count
+    const wordCount = plainTextContent.trim().split(/\s+/).length;
+    if (wordCount > 750) {
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: "⚠️ Your document exceeds the 750 word limit. Please reduce the content to analyze the document."
+      }]);
+      return;
+    }
+
     setIsLoading(true);
     const newMessage: Message = { role: "user", content: message };
     setMessages((prev) => [...prev, newMessage]);
     setInputMessage("");
 
     try {
-      // Get current document content
-      const documentContent = localStorage.getItem(
-        `snippet-content-${activeDocId}`
-      );
-      const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = documentContent || "";
-      const plainTextContent = tempDiv.textContent || tempDiv.innerText || "";
-
       // Create system message with document content
-      const systemMessage = {
-        role: "system",
+      const systemMessage: Message = {
+        role: "assistant",
         content: `You are an AI writing assistant. The user is working on a document with the following content:\n\n${plainTextContent}\n\nHelp them improve, analyze, or modify this content based on their requests. Be specific and reference parts of their document when relevant.`,
       };
 

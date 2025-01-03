@@ -4,7 +4,7 @@ import OpenAI from "openai";
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, apiKey } = await request.json();
+    const { messages, systemMessage, apiKey } = await request.json();
 
     if (!apiKey) {
       return NextResponse.json(
@@ -17,8 +17,12 @@ export async function POST(request: NextRequest) {
       apiKey: apiKey,
     });
 
+    console.log(systemMessage);
+
+    // console.log(messages);
+
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
@@ -29,12 +33,13 @@ export async function POST(request: NextRequest) {
 - Maintaining the user's voice and intent
 - Being concise and specific in your feedback
 
-Keep your responses focused on writing and document editing. When appropriate, refer to specific parts of their text and explain why certain changes would improve their writing.`
+Keep your responses focused on writing and document editing. When appropriate, refer to specific parts of their text and explain why certain changes would improve their writing.
+`,
         },
-        ...messages
+        ...messages,
+        systemMessage,
       ],
-      temperature: 0.7,
-      max_tokens: 1000,
+      temperature: 0.2,
     });
 
     return NextResponse.json({
@@ -43,17 +48,18 @@ Keep your responses focused on writing and document editing. When appropriate, r
           message: {
             content: response.choices[0].message.content,
             role: response.choices[0].message.role,
-          }
-        }
-      ]
+          },
+        },
+      ],
     });
   } catch (error: unknown) {
     console.error("Error:", error);
-    const errorMessage = error instanceof Error ? error.message : "An error occurred";
-    const errorStatus = error instanceof Error && 'status' in error ? Number((error as { status: number }).status) : 500;
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: errorStatus }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : "An error occurred";
+    const errorStatus =
+      error instanceof Error && "status" in error
+        ? Number((error as { status: number }).status)
+        : 500;
+    return NextResponse.json({ error: errorMessage }, { status: errorStatus });
   }
 }
