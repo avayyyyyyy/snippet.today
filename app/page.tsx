@@ -373,7 +373,6 @@ export default function Home() {
   const handleRename = (id: string) => {
     if (newFileName.trim()) {
       // Get the old document name
-      const oldDoc = documents.find(doc => doc.id === id);
       const oldContent = localStorage.getItem(`snippet-content-${id}`);
       
       // Update documents array
