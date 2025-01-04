@@ -351,6 +351,31 @@ export default function Home() {
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [starsCount, setStarsCount] = useState<number | null>(null);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+        setIsPlaying(true);
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      const progress =
+        (videoRef.current.currentTime / videoRef.current.duration) * 100;
+      setProgress(progress);
+    }
+  };
 
   useEffect(() => {
     // Fetch GitHub stars count
@@ -664,6 +689,21 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem("snippet-active-doc", activeDocId);
   }, [activeDocId]);
+
+  // Move the welcome modal check to a useEffect
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hasSeenWelcome = localStorage.getItem("snippet-welcome-shown");
+      if (!hasSeenWelcome) {
+        setShowWelcomeModal(true);
+      }
+    }
+  }, []);
+
+  const handleCloseWelcomeModal = () => {
+    setShowWelcomeModal(false);
+    localStorage.setItem("snippet-welcome-shown", "true");
+  };
 
   return (
     <div className="h-screen flex flex-col bg-white">
@@ -1129,6 +1169,122 @@ export default function Home() {
           isLoading={isLoading}
           sendMessage={sendMessage}
         />
+      )}
+
+      {/* Welcome Modal */}
+      {showWelcomeModal && (
+        <>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200]" />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-3xl bg-white rounded-xl shadow-2xl z-[201] overflow-hidden">
+            <div className="relative">
+              {/* Video Container */}
+              <div
+                className="aspect-video w-full bg-gray-900 relative group cursor-pointer"
+                onClick={togglePlay}
+              >
+                {!isVideoLoaded && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+                <video
+                  ref={videoRef}
+                  src="https://utfs.io/f/ZeS8ew97fvPDGFAgwrJkEJXDONL2mBrTcuZ4S3lpjVMzxdHh"
+                  className={`w-full h-full object-contain transition-opacity duration-300 ${
+                    isVideoLoaded ? "opacity-100" : "opacity-0"
+                  }`}
+                  autoPlay
+                  muted
+                  playsInline
+                  onLoadedData={() => setIsVideoLoaded(true)}
+                  onTimeUpdate={handleTimeUpdate}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                >
+                  Your browser does not support the video tag.
+                </video>
+                {/* Custom Play Button - Only show when video is loaded and paused */}
+                {isVideoLoaded && !isPlaying && (
+                  <div className="absolute inset-0 flex items-center justify-center z-10">
+                    <div className="w-20 h-20 bg-black/30 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 hover:bg-black/40">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="white"
+                        className="transform translate-x-1"
+                      >
+                        <polygon points="5 3 19 12 5 21" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
+                {/* Video Progress Bar - Only show when video is loaded */}
+                {isVideoLoaded && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/20 z-10">
+                    <div
+                      className="h-full bg-blue-500 transition-all duration-300"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Content Below Video */}
+              <div className="p-6">
+                <h2 className="text-2xl font-bold mb-4">
+                  Welcome to Snippet Today!
+                </h2>
+                <p className="text-gray-700 mb-4">
+                  <span className="font-semibold md:text-sm text-xs">
+                    Snippet Today
+                  </span>{" "}
+                  is a powerful writing assistant that helps you create and
+                  organize your ideas. With AI-powered suggestions,
+                  distraction-free editing, and automatic saving, you can focus
+                  on your writing and let Snippet Today handle the rest.
+                </p>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="items-center gap-2 text-sm hidden md:flex text-gray-500">
+                    <span>✨ AI-powered writing assistance</span>
+                    <span>•</span>
+                    <span>📝 Distraction-free editor</span>
+                    <span>•</span>
+                    <span>💾 Auto-save</span>
+                  </div>
+                  <button
+                    onClick={() => handleCloseWelcomeModal()}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                  >
+                    Get Started
+                  </button>
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <button
+                onClick={() => handleCloseWelcomeModal()}
+                className="absolute top-4 right-4 p-1 rounded-full bg-black/50 text-white hover:bg-black/60 transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       <style jsx global>{`
