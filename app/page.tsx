@@ -343,13 +343,26 @@ export default function Home() {
   });
   const [messages, setMessages] = useState<Message[]>(() => {
     if (typeof window !== "undefined") {
-      const savedMessages = localStorage.getItem("snippet-chat");
+      const savedMessages = localStorage.getItem(`snippet-chat-${activeDocId}`);
       return savedMessages ? JSON.parse(savedMessages) : [];
     }
     return [];
   });
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [starsCount, setStarsCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Fetch GitHub stars count
+    fetch("https://api.github.com/repos/avayyyyyyy/snippet.today")
+      .then((response) => response.json())
+      .then((data) => {
+        setStarsCount(data.stargazers_count);
+      })
+      .catch((error) => {
+        console.error("Error fetching stars count:", error);
+      });
+  }, []);
 
   useEffect(() => {
     const savedContent = localStorage.getItem(`snippet-content-${activeDocId}`);
@@ -370,8 +383,18 @@ export default function Home() {
   }, [activeDocId]); // Re-run when active document changes
 
   useEffect(() => {
-    localStorage.setItem("snippet-chat", JSON.stringify(messages));
-  }, [messages]);
+    if (typeof window !== "undefined") {
+      const savedMessages = localStorage.getItem(`snippet-chat-${activeDocId}`);
+      setMessages(savedMessages ? JSON.parse(savedMessages) : []);
+    }
+  }, [activeDocId]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      `snippet-chat-${activeDocId}`,
+      JSON.stringify(messages)
+    );
+  }, [messages, activeDocId]);
 
   const handleWordCountChange = (words: number, characters: number) => {
     setWordCount(words);
@@ -382,18 +405,20 @@ export default function Home() {
     const newDoc = {
       id: Date.now().toString(),
       name: "Untitled Document",
-      content: "",
+      content: initialBody,
     };
     setDocuments([...documents, newDoc]);
     setActiveDocId(newDoc.id);
-    localStorage.setItem(`snippet-content-${newDoc.id}`, "");
+    // Save the initial content to localStorage
+    localStorage.setItem(`snippet-content-${newDoc.id}`, initialBody);
   };
 
   const deleteDocument = (id: string) => {
     if (documents.length === 1) return; // Prevent deleting the last document
 
-    // Remove document content from localStorage
+    // Remove document content and chat history from localStorage
     localStorage.removeItem(`snippet-content-${id}`);
+    localStorage.removeItem(`snippet-chat-${id}`);
 
     const newDocs = documents.filter((doc) => doc.id !== id);
     setDocuments(newDocs);
@@ -434,7 +459,54 @@ export default function Home() {
   const exportAsMarkdown = () => {
     const content = localStorage.getItem(`snippet-content-${activeDocId}`);
     if (content) {
-      const blob = new Blob([content], { type: "text/markdown" });
+      // Convert HTML to Markdown
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = content;
+
+      // Basic HTML to Markdown conversion
+      const markdown = content
+        // Headers
+        .replace(/<h1[^>]*>(.*?)<\/h1>/gi, "# $1\n\n")
+        .replace(/<h2[^>]*>(.*?)<\/h2>/gi, "## $1\n\n")
+        .replace(/<h3[^>]*>(.*?)<\/h3>/gi, "### $1\n\n")
+        // Lists
+        .replace(/<ul[^>]*>(.*?)<\/ul>/gi, "$1\n")
+        .replace(/<ol[^>]*>(.*?)<\/ol>/gi, "$1\n")
+        .replace(/<li[^>]*>(.*?)<\/li>/gi, "* $1\n")
+        // Paragraphs
+        .replace(/<p[^>]*>(.*?)<\/p>/gi, "$1\n\n")
+        // Bold and Italic
+        .replace(/<strong[^>]*>(.*?)<\/strong>/gi, "**$1**")
+        .replace(/<b[^>]*>(.*?)<\/b>/gi, "**$1**")
+        .replace(/<em[^>]*>(.*?)<\/em>/gi, "*$1*")
+        .replace(/<i[^>]*>(.*?)<\/i>/gi, "*$1*")
+        // Code blocks
+        .replace(
+          /<pre[^>]*><code[^>]*>(.*?)<\/code><\/pre>/gi,
+          "```\n$1\n```\n"
+        )
+        .replace(/<code[^>]*>(.*?)<\/code>/gi, "`$1`")
+        // Blockquotes
+        .replace(/<blockquote[^>]*>(.*?)<\/blockquote>/gi, "> $1\n")
+        // Links
+        .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, "[$2]($1)")
+        // Images
+        .replace(/<img[^>]*src="([^"]*)"[^>]*>/gi, "![]($1)")
+        // Line breaks
+        .replace(/<br[^>]*>/gi, "\n")
+        // Clean up extra spaces and lines
+        .replace(/&nbsp;/g, " ")
+        .replace(/\n\s*\n\s*\n/g, "\n\n")
+        // Remove remaining HTML tags
+        .replace(/<[^>]*>/g, "")
+        // Decode HTML entities
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .trim();
+
+      const blob = new Blob([markdown], { type: "text/markdown" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -450,16 +522,13 @@ export default function Home() {
     if (!message.trim() || !openAIKey) return;
 
     // Get current document content
-    const documentContent = localStorage.getItem("snippet-documents");
+    const documentContent = localStorage.getItem(
+      `snippet-content${activeDocId ? `-${activeDocId}` : ""}`
+    );
 
     const tempDiv = document.createElement("div");
-    tempDiv.innerHTML =
-      JSON.parse(documentContent || "[]").find(
-        (doc: Document) => doc.id === activeDocId
-      )?.content || "";
+    tempDiv.innerHTML = documentContent || "";
     const plainTextContent = tempDiv.textContent || tempDiv.innerText || "";
-
-    console.log(plainTextContent);
 
     // Check word count
     const wordCount = plainTextContent.trim().split(/\s+/).length;
@@ -484,10 +553,44 @@ export default function Home() {
       // Create system message with document content
       const systemMessage: Message = {
         role: "assistant",
-        content: `You are an AI writing assistant. The user is working on a document with the following content:\n\n${plainTextContent}\n\nHelp them improve, analyze, or modify this content based on their requests. Be specific and reference parts of their document when relevant.`,
+        content: `You are an expert writing assistant focused on helping users refine and enhance their documents. Here is the current content you're working with:
+          ${plainTextContent}
+          Your role is to:
+
+          Carefully analyze the provided text
+          Address the user's specific writing needs and requests
+          Provide targeted feedback referencing particular sections
+          Suggest concrete improvements while preserving the author's voice
+          Consider the document's apparent purpose, tone, and target audience
+
+          When offering suggestions:
+
+          Point to specific sentences or passages using clear indicators (e.g., "In the opening paragraph...")
+          Explain the reasoning behind your recommendations
+          Provide example revisions when helpful
+          Focus on changes that will have the most impact
+          Present feedback in a constructive, actionable way
+
+          If the user's intent or goals aren't clear, ask focused questions to better understand how you can help them improve their writing.
+          Remember to maintain the document's:
+
+          Core message and purpose
+          Author's unique voice and style
+          Target audience engagement
+          Genre-appropriate conventions
+          Overall flow and coherence
+          
+          Output:
+          Provide your feedback in a clear, concise, and actionable manner. Use markdown formatting to highlight specific changes and suggestions.
+          If you're unsure about the user's intent or goals, ask clarifying questions to better understand how you can help them improve their writing.
+          Always aim to empower writers to make their own informed decisions about their work while providing expert guidance to help them improve.
+          
+          NOTE:
+          Do not give any starting text like "It seems like you've shared a document outlining the features and functionalities of the writing app snippet.today.", just give your feedback like "Here's what you asked for" like this.
+          `,
       };
 
-      // Get last 10 messages for context
+      // Get last 10 messages for context from current document's chat history
       const recentMessages = [...messages.slice(-10), newMessage];
 
       const response = await fetch("/api/chat", {
@@ -864,6 +967,32 @@ export default function Home() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <a
+              href="https://github.com/avayyyyyyy/snippet.today"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+              </svg>
+              <span>Star</span>
+              {starsCount !== null && (
+                <span className="bg-gray-100 px-1.5 py-0.5 rounded-full text-xs font-medium">
+                  {starsCount}
+                </span>
+              )}
+            </a>
             <button
               onClick={() => setShowExportPopup(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"

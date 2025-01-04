@@ -1,17 +1,18 @@
 # ✨ snippet.today
 
-> A minimalist, privacy-focused writing companion that works entirely in your browser.
+> A minimalist, privacy-focused writing open source companion that works entirely in your browser.
 
 <div align="center">
   <img src="https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js" alt="Next.js" />
   <img src="https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript" alt="TypeScript" />
   <img src="https://img.shields.io/badge/TailwindCSS-3-38B2AC?style=flat-square&logo=tailwind-css" alt="Tailwind CSS" />
-  <img src="https://img.shields.io/badge/OpenAI-GPT--4-412991?style=flat-square&logo=openai" alt="OpenAI GPT-4o-mini" />
+  <img src="https://img.shields.io/badge/OpenAI-GPT--4o--mini-412991?style=flat-square&logo=openai" alt="OpenAI GPT-4o-mini" />
 </div>
 
 ## 🚀 Features
 
 ### 📝 Writing Experience
+
 - **Rich Text Editor** with markdown support
 - **Command Menu** (Cmd/Ctrl + /) for quick formatting
 - **Multiple Documents** with auto-save
@@ -19,18 +20,21 @@
 - **Distraction-free Interface**
 
 ### 🤖 AI Assistant
+
 - **Writing Suggestions** powered by GPT-4o-mini
 - **Grammar & Style Checks**
 - **Content Ideas** generation
 - **Document Analysis**
 
 ### 🖼️ Media Support
+
 - **Image Embedding** via drag & drop
 - **Resize Controls** for images
 - **Copy & Paste** support
 - **Inline Display**
 
 ### 🔒 Privacy First
+
 - **Local Storage** - All data stays in your browser
 - **No Account Needed** - Start writing immediately
 - **Your API Key** - Use your own OpenAI key
@@ -39,12 +43,14 @@
 ## 🛠️ Quick Start
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/avayyyyyyy/snippet.today.git
 cd snippet.today
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 # or
@@ -52,6 +58,7 @@ yarn install
 ```
 
 3. Run the development server:
+
 ```bash
 npm run dev
 # or

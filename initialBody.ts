@@ -1,6 +1,6 @@
 export const initialBody = `
           <h1>Welcome to snippet.today! ✨</h1>
-          <p>Your minimalist, privacy-focused writing companion that works entirely in your browser.</p>
+          <p>Your minimalist, privacy-focused open source writing companion that works entirely in your browser.</p>
 
           <h2>🎯 Core Features</h2>
           <ul>
