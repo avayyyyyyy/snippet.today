@@ -14,8 +14,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "snippet.today - A Clean, Distraction-Free Writing Environment",
-  description: "Experience focused writing with AI assistance. Create, edit, and improve your documents with a minimalist interface and intelligent suggestions.",
-  keywords: ["writing app", "markdown editor", "AI writing assistant", "distraction-free writing", "minimalist editor"],
+  description:
+    "Experience focused writing with AI assistance. Create, edit, and improve your documents with a minimalist interface and intelligent suggestions.",
+  keywords: [
+    "writing app",
+    "markdown editor",
+    "AI writing assistant",
+    "distraction-free writing",
+    "minimalist editor",
+  ],
   authors: [{ name: "Shubhankit Jain", url: "https://x.com/shubhcodes" }],
   creator: "Shubhankit Jain",
   publisher: "snippet.today",
@@ -25,23 +32,27 @@ export const metadata: Metadata = {
     url: "https://snippet.today",
     siteName: "snippet.today",
     title: "snippet.today - A Clean, Distraction-Free Writing Environment",
-    description: "Experience focused writing with AI assistance. Create, edit, and improve your documents with a minimalist interface and intelligent suggestions.",
-    // images: [
-    //   {
-    //     url: "/og-image.png",
-    //     width: 1200,
-    //     height: 630,
-    //     alt: "snippet.today preview",
-    //   },
-    // ],
+    description:
+      "Experience focused writing with AI assistance. Create, edit, and improve your documents with a minimalist interface and intelligent suggestions.",
+    images: [
+      {
+        url: "https://utfs.io/f/ZeS8ew97fvPDshopijOmPHwZq7h1UsrEOVjDJF4BgKdaSfLp",
+        width: 1200,
+        height: 630,
+        alt: "snippet.today preview",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     site: "@shubhcodes",
     creator: "@shubhcodes",
     title: "snippet.today - A Clean, Distraction-Free Writing Environment",
-    description: "Experience focused writing with AI assistance. Create, edit, and improve your documents with a minimalist interface and intelligent suggestions.",
-    // images: ["/og-image.png"], 
+    description:
+      "Experience focused writing with AI assistance. Create, edit, and improve your documents with a minimalist interface and intelligent suggestions.",
+    images: [
+      "https://utfs.io/f/ZeS8ew97fvPDshopijOmPHwZq7h1UsrEOVjDJF4BgKdaSfLp",
+    ],
   },
   robots: {
     index: true,
@@ -49,9 +60,9 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
   verification: {
@@ -73,7 +84,10 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="theme-color" content="#ffffff" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1"
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
