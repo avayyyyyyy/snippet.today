@@ -1,0 +1,216 @@
+.changelog-container {
+  @apply w-full max-w-none;
+}
+
+.changelog-content {
+  @apply text-[#111111];
+}
+
+.changelog-content h1 {
+  @apply text-4xl font-bold mb-8 text-[#111111];
+  display: inline-block;
+  position: relative;
+  width: 100%;
+}
+
+/* Apply gradient effect only on hover for better visibility */
+/* .changelog-content h1:hover {
+  background: linear-gradient(90deg, #111111 0%, #666666 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-fill-color: transparent;
+  animation: gradientFlow 8s ease infinite;
+} */
+
+/* Add an underline effect */
+/* .changelog-content h1::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, #111111 0%, #666666 100%);
+  opacity: 0.2;
+  transition: opacity 0.3s ease;
+}
+
+.changelog-content h1:hover::after {
+  opacity: 1;
+} */
+
+.changelog-content h2 {
+  @apply text-2xl font-semibold mt-12 mb-6 pb-4 border-b border-[#eaeaea];
+  position: relative;
+}
+
+.changelog-content h2::after {
+  content: "";
+  @apply absolute bottom-0 left-0 h-[1px] bg-[#111111];
+  width: 0;
+  transition: width 0.3s ease;
+}
+
+.changelog-content h2:hover::after {
+  width: 100%;
+}
+
+.changelog-content h3 {
+  @apply text-lg font-medium mt-8 mb-4 text-[#666666];
+  transition: color 0.2s ease;
+}
+
+.changelog-content h3:hover {
+  @apply text-[#111111];
+}
+
+.changelog-content p {
+  @apply text-base leading-relaxed mb-4 text-[#444444];
+}
+
+.changelog-content ul {
+  @apply space-y-2 mb-6;
+}
+
+.changelog-content li {
+  @apply flex items-start gap-2 text-[#444444];
+  transition: transform 0.2s ease;
+}
+
+.changelog-content li:hover {
+  transform: translateX(4px);
+}
+
+.changelog-content li::before {
+  content: "";
+  @apply block w-1.5 h-1.5 mt-2 rounded-full bg-[#111111];
+  transition: transform 0.2s ease;
+}
+
+.changelog-content li:hover::before {
+  transform: scale(1.2);
+}
+
+.changelog-content a {
+  @apply text-[#111111] underline decoration-[#eaeaea] hover:decoration-[#111111] transition-colors;
+  position: relative;
+  text-underline-offset: 2px;
+}
+
+.changelog-content a::after {
+  content: "↗";
+  @apply ml-1 opacity-0 translate-x-[-4px] inline-block;
+  transition: all 0.2s ease;
+}
+
+.changelog-content a:hover::after {
+  @apply opacity-100 translate-x-0;
+}
+
+.changelog-content code {
+  @apply px-1.5 py-0.5 text-sm bg-[#fafafa] border border-[#eaeaea] rounded;
+  transition: all 0.2s ease;
+}
+
+.changelog-content code:hover {
+  @apply bg-[#f5f5f5] border-[#666666];
+}
+
+.changelog-content pre {
+  @apply p-4 bg-[#fafafa] border border-[#eaeaea] rounded-lg overflow-x-auto;
+  transition: all 0.2s ease;
+}
+
+.changelog-content pre:hover {
+  @apply shadow-sm border-[#666666];
+}
+
+.changelog-content pre code {
+  @apply p-0 border-0 bg-transparent;
+}
+
+.changelog-content blockquote {
+  @apply pl-4 border-l-2 border-[#eaeaea] text-[#666666] italic;
+  transition: all 0.2s ease;
+}
+
+.changelog-content blockquote:hover {
+  @apply border-l-2 border-[#111111];
+}
+
+.changelog-content table {
+  @apply w-full border-collapse mb-6;
+}
+
+.changelog-content th {
+  @apply px-4 py-2 text-left font-medium bg-[#fafafa] border border-[#eaeaea];
+}
+
+.changelog-content td {
+  @apply px-4 py-2 border border-[#eaeaea];
+  transition: background-color 0.2s ease;
+}
+
+.changelog-content tr:hover td {
+  @apply bg-[#fafafa];
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gradientFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.changelog-content > * {
+  animation: fadeIn 0.3s ease-out forwards;
+  opacity: 0;
+}
+
+.changelog-content > *:nth-child(1) {
+  animation-delay: 0s;
+}
+.changelog-content > *:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.changelog-content > *:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.changelog-content > *:nth-child(4) {
+  animation-delay: 0.3s;
+}
+.changelog-content > *:nth-child(5) {
+  animation-delay: 0.4s;
+}
+.changelog-content > *:nth-child(n + 6) {
+  animation-delay: 0.5s;
+}
+
+/* Smooth scrolling for anchor links */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection styling */
+::selection {
+  @apply bg-[#111111] text-white;
+}

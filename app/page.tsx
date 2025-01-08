@@ -4,6 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import Editor from "@/app/components/Editor";
 import ReactMarkdown from "react-markdown";
 import { initialBody } from "@/initialBody";
+import { QRCodeSVG } from "qrcode.react";
+import Peer from "peerjs";
+import ShareQRCode from "@/app/components/ShareQRCode";
+import Link from "next/link";
 
 interface Document {
   id: string;
@@ -351,11 +355,17 @@ export default function Home() {
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [starsCount, setStarsCount] = useState<number | null>(null);
-  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(
+    !localStorage.getItem("snippet-welcome-shown")
+  );
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [peer, setPeer] = useState<Peer | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -488,8 +498,8 @@ export default function Home() {
       const tempDiv = document.createElement("div");
       tempDiv.innerHTML = content;
 
-      // Basic HTML to Markdown conversion
-      const markdown = content
+      // Basic HTML to Markdown conversion with proper formatting
+      let markdown = content
         // Headers
         .replace(/<h1[^>]*>(.*?)<\/h1>/gi, "# $1\n\n")
         .replace(/<h2[^>]*>(.*?)<\/h2>/gi, "## $1\n\n")
@@ -498,8 +508,10 @@ export default function Home() {
         .replace(/<ul[^>]*>(.*?)<\/ul>/gi, "$1\n")
         .replace(/<ol[^>]*>(.*?)<\/ol>/gi, "$1\n")
         .replace(/<li[^>]*>(.*?)<\/li>/gi, "* $1\n")
-        // Paragraphs
+        // Paragraphs and line breaks
+        .replace(/<p[^>]*>(\s*)<\/p>/gi, "\n") // Empty paragraphs to newlines
         .replace(/<p[^>]*>(.*?)<\/p>/gi, "$1\n\n")
+        .replace(/<br[^>]*>/gi, "\n")
         // Bold and Italic
         .replace(/<strong[^>]*>(.*?)<\/strong>/gi, "**$1**")
         .replace(/<b[^>]*>(.*?)<\/b>/gi, "**$1**")
@@ -512,24 +524,45 @@ export default function Home() {
         )
         .replace(/<code[^>]*>(.*?)<\/code>/gi, "`$1`")
         // Blockquotes
-        .replace(/<blockquote[^>]*>(.*?)<\/blockquote>/gi, "> $1\n")
+        .replace(/<blockquote[^>]*>(.*?)<\/blockquote>/gi, "> $1\n\n")
         // Links
         .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, "[$2]($1)")
         // Images
         .replace(/<img[^>]*src="([^"]*)"[^>]*>/gi, "![]($1)")
-        // Line breaks
-        .replace(/<br[^>]*>/gi, "\n")
-        // Clean up extra spaces and lines
+        // Tables
+        .replace(/<table[^>]*>(.*?)<\/table>/gi, (match, tableContent) => {
+          const rows = tableContent.match(/<tr[^>]*>(.*?)<\/tr>/gi) || [];
+          return (
+            rows
+              .map((row: string) => {
+                const cells = row.match(/<t[dh][^>]*>(.*?)<\/t[dh]>/gi) || [];
+                return cells
+                  .map((cell: string) => {
+                    return cell.replace(/<t[dh][^>]*>(.*?)<\/t[dh]>/gi, "$1");
+                  })
+                  .join(" | ");
+              })
+              .join("\n") + "\n"
+          );
+        })
+        // Clean up
         .replace(/&nbsp;/g, " ")
-        .replace(/\n\s*\n\s*\n/g, "\n\n")
-        // Remove remaining HTML tags
-        .replace(/<[^>]*>/g, "")
-        // Decode HTML entities
+        .replace(/\n\s*\n\s*\n/g, "\n\n") // Remove extra blank lines
+        .replace(/<[^>]*>/g, "") // Remove any remaining HTML tags
+        // Fix HTML entities
         .replace(/&lt;/g, "<")
         .replace(/&gt;/g, ">")
         .replace(/&amp;/g, "&")
         .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
         .trim();
+
+      // Add proper spacing
+      markdown = markdown
+        .split("\n")
+        .map((line) => line.trim())
+        .join("\n")
+        .replace(/\n\n\n+/g, "\n\n");
 
       const blob = new Blob([markdown], { type: "text/markdown" });
       const url = URL.createObjectURL(blob);
@@ -563,7 +596,7 @@ export default function Home() {
         {
           role: "assistant",
           content:
-            "⚠️ Your document exceeds the 750 word limit. Please reduce the content to analyze the document.",
+            "⚠⚠️ Your document exceeds the 750 word limit. Please reduce the content to analyze the document.",
         },
       ]);
       return;
@@ -705,6 +738,74 @@ export default function Home() {
     localStorage.setItem("snippet-welcome-shown", "true");
   };
 
+  const handleDragReorder = (draggedId: string, droppedId: string) => {
+    const draggedIndex = documents.findIndex((doc) => doc.id === draggedId);
+    const droppedIndex = documents.findIndex((doc) => doc.id === droppedId);
+
+    if (draggedIndex === droppedIndex) return;
+
+    const newDocs = [...documents];
+    const [draggedDoc] = newDocs.splice(draggedIndex, 1);
+    newDocs.splice(droppedIndex, 0, draggedDoc);
+    setDocuments(newDocs);
+  };
+
+  // Initialize PeerJS when export popup is opened
+  useEffect(() => {
+    if (showExportPopup && !peer) {
+      const newPeer = new Peer();
+
+      newPeer.on("open", () => {
+        setPeer(newPeer);
+        setConnectionStatus("Ready to share! Waiting for connection...");
+      });
+
+      newPeer.on("connection", (conn) => {
+        setConnectionStatus("Peer connected! Sending document...");
+
+        conn.on("open", () => {
+          // Send the document data
+          conn.send({
+            id: activeDocId,
+            content:
+              localStorage.getItem(`snippet-content-${activeDocId}`) || "",
+            timestamp: new Date().toISOString(),
+          });
+          setConnectionStatus("Document sent successfully!");
+        });
+
+        conn.on("error", (error) => {
+          setConnectionStatus("Error: " + error.message);
+        });
+      });
+
+      newPeer.on("error", (error) => {
+        setConnectionStatus("Error: " + error.message);
+      });
+
+      return () => {
+        newPeer.destroy();
+        setPeer(null);
+        setConnectionStatus("");
+      };
+    }
+  }, [showExportPopup, activeDocId]);
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, id: string) => {
+    e.dataTransfer.setData("text", id);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, id: string) => {
+    e.preventDefault();
+    const draggedId = e.dataTransfer.getData("text");
+    handleDragReorder(draggedId, id);
+    setIsDragging(false);
+  };
+
   return (
     <div className="h-screen flex flex-col bg-white">
       {/* Header */}
@@ -838,18 +939,33 @@ export default function Home() {
                   </svg>
                 </button>
               </div>
-              <div className="space-y-2">
+              <div
+                className={`space-y-1 ${isDragging ? "document-dragging" : ""}`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={() => setIsDragging(false)}
+              >
                 {documents.map((doc) => (
                   <div
                     key={doc.id}
-                    className={`p-2 rounded-md flex items-center justify-between group ${
-                      doc.id === activeDocId
-                        ? "bg-blue-50 text-blue-700"
-                        : "hover:bg-gray-50 text-gray-700"
-                    }`}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, doc.id)}
+                    onDragEnd={() => handleDragEnd()}
+                    onDrop={(e) => handleDrop(e, doc.id)}
+                    className={`
+                      group flex items-center justify-between p-2 rounded-lg
+                      ${
+                        doc.id === activeDocId
+                          ? "bg-blue-50 text-blue-700"
+                          : "hover:bg-gray-50 text-gray-700"
+                      }
+                    `}
                   >
                     <div
-                      className="flex items-center gap-2 flex-1 min-w-0"
+                      className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
                       onClick={() => setActiveDocId(doc.id)}
                     >
                       <svg
@@ -862,6 +978,7 @@ export default function Home() {
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
+                        className="flex-shrink-0"
                       >
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                         <polyline points="14 2 14 8 20 8"></polyline>
@@ -942,22 +1059,41 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Features */}
+            {/* Links */}
             <div className="mt-auto">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-gray-700 font-medium mb-2">Features:</p>
-                <li className="text-xs text-gray-500">
-                  All your work is saved in the browser.
-                </li>
-                <li className="text-xs text-gray-500">
-                  You can create and save multiple documents.
-                </li>
-                <li className="text-xs text-gray-500">
-                  You can export your document as a markdown file.
-                </li>
-                <li className="text-xs text-gray-500">
-                  You can chat with your document.
-                </li>
+              <div className="space-y-2">
+                <Link
+                  href="/changelog"
+                  className="flex flex-col gap-2 p-4 text-sm text-gray-600 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-white rounded-lg group-hover:bg-gray-50 transition-colors">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <path d="M14 2v6h6" />
+                        <path d="M16 13H8" />
+                        <path d="M16 17H8" />
+                        <path d="M10 9H8" />
+                      </svg>
+                    </div>
+                    <span className="font-medium">Latest Updates</span>
+                  </div>
+                  <p className="text-xs text-gray-500 leading-relaxed pl-8">
+                    Stay up to date with the latest improvements and features
+                    added to Snippet Today. We&apos;re constantly working to
+                    make your experience better.
+                  </p>
+                </Link>
               </div>
             </div>
           </div>
@@ -1079,49 +1215,120 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* Export Popup */}
+      {/* Export/Share Popup */}
       {showExportPopup && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[150]"
-            onClick={() => setShowExportPopup(false)}
-          />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-[200] w-[400px] max-w-[90vw]">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-medium text-gray-900">Export Document</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="text-lg font-semibold">Share & Export</h3>
               <button
                 onClick={() => setShowExportPopup(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-50 rounded-full transition-colors"
+                className="text-gray-500 hover:text-gray-700"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
+                  className="h-6 w-6"
                   fill="none"
+                  viewBox="0 0 24 24"
                   stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
                 >
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
-            <div className="space-y-4">
-              <button
-                onClick={() => {
-                  exportAsMarkdown();
-                  setShowExportPopup(false);
-                }}
-                className="w-full flex items-center justify-between p-3 text-left text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <div className="flex items-center gap-3">
+
+            <div className="p-4 space-y-4">
+              {/* QR Code Section */}
+              <div className="space-y-2">
+                <h4 className="font-medium">Share via QR Code</h4>
+                <div className="bg-gray-50 p-4 rounded-lg flex flex-col items-center space-y-4">
+                  {peer?.id ? (
+                    <>
+                      <QRCodeSVG
+                        value={`${window.location.origin}/receive?peerId=${peer.id}`}
+                        size={200}
+                      />
+                      <div className="w-full max-w-sm break-all text-center">
+                        <p className="text-sm text-gray-600 mb-2">
+                          Or share this URL:
+                        </p>
+                        <div className="flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200">
+                          <code className="text-xs text-gray-600 flex-1 break-all">
+                            {`${window.location.origin}/receive?peerId=${peer.id}`}
+                          </code>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(
+                                `${window.location.origin}/receive?peerId=${peer.id}`
+                              );
+                              // You could add a toast notification here
+                            }}
+                            className="p-1 hover:bg-gray-100 rounded"
+                            title="Copy URL"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="text-gray-500"
+                            >
+                              <rect
+                                x="9"
+                                y="9"
+                                width="13"
+                                height="13"
+                                rx="2"
+                                ry="2"
+                              ></rect>
+                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 w-full">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-4"></div>
+                      <p className="text-sm text-gray-600">
+                        Generating sharing link...
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600 text-center">
+                  Scan this QR code or use the URL to receive the document in
+                  your browser
+                </p>
+                <div className="text-sm text-gray-600 text-center">
+                  {connectionStatus}
+                </div>
+              </div>
+
+              {/* Export Section */}
+              <div className="space-y-2">
+                <h4 className="font-medium">Export Options</h4>
+                <button
+                  onClick={() => {
+                    exportAsMarkdown();
+                    setShowExportPopup(false);
+                  }}
+                  className="w-full px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm text-gray-700 transition-colors flex items-center justify-center gap-2"
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
+                    width="16"
+                    height="16"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -1129,32 +1336,16 @@ export default function Home() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   >
-                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
                   </svg>
-                  <div>
-                    <div className="font-medium text-gray-900">Markdown</div>
-                    <div className="text-gray-500">Export as .md file</div>
-                  </div>
-                </div>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M5 12h14"></path>
-                  <path d="m12 5 7 7-7 7"></path>
-                </svg>
-              </button>
+                  Export as Markdown
+                </button>
+              </div>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {showChatPopup && (
@@ -1287,6 +1478,14 @@ export default function Home() {
         </>
       )}
 
+      {/* Share Modal */}
+      <ShareQRCode
+        documentId={activeDocId}
+        content={localStorage.getItem(`snippet-content-${activeDocId}`) || ""}
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+      />
+
       <style jsx global>{`
         @keyframes float {
           0%,
@@ -1315,6 +1514,22 @@ export default function Home() {
         .animate-float-delayed {
           animation: float-delayed 3s ease-in-out infinite;
           animation-delay: 0.5s;
+        }
+
+        @keyframes dropHighlight {
+          0% {
+            border-color: transparent;
+          }
+          50% {
+            border-color: #3b82f6;
+          }
+          100% {
+            border-color: transparent;
+          }
+        }
+
+        .document-dragging {
+          animation: dropHighlight 1s ease infinite;
         }
       `}</style>
     </div>

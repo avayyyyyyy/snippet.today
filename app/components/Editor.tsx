@@ -4,6 +4,11 @@ import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
+import Underline from "@tiptap/extension-underline";
+import Table from "@tiptap/extension-table";
+import TableRow from "@tiptap/extension-table-row";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
 import CommandMenu from "./CommandMenu";
 import { initialBody } from "@/initialBody";
 
@@ -121,6 +126,7 @@ export default function Editor({
   const [showCommands, setShowCommands] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const editorRef = useRef<HTMLDivElement>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const countWordsAndChars = useCallback(
     (text: string) => {
@@ -206,6 +212,9 @@ export default function Editor({
       }),
       Link.configure({
         openOnClick: true,
+        linkOnPaste: true,
+        autolink: true,
+        protocols: ["http", "https"],
         HTMLAttributes: {
           class: "text-blue-600 hover:underline",
           target: "_blank",
@@ -220,6 +229,28 @@ export default function Editor({
           return "";
         },
         showOnlyWhenEditable: true,
+      }),
+      Underline,
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: "border-collapse table-auto w-full my-4",
+        },
+      }),
+      TableRow.configure({
+        HTMLAttributes: {
+          class: "border-t border-gray-200",
+        },
+      }),
+      TableCell.configure({
+        HTMLAttributes: {
+          class: "border border-gray-200 p-2",
+        },
+      }),
+      TableHeader.configure({
+        HTMLAttributes: {
+          class: "border border-gray-200 p-2 bg-gray-50 font-medium",
+        },
       }),
     ],
     content: initialBody,
@@ -306,6 +337,30 @@ export default function Editor({
     }
   }, [documentId, editor]);
 
+  useEffect(() => {
+    // Add click handler for images
+    const handleImageClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const resizeContainer = target.closest(".image-resizer");
+      if (target.tagName === "IMG" && resizeContainer) {
+        e.preventDefault();
+        e.stopPropagation();
+        setPreviewImage(target.getAttribute("src"));
+      }
+    };
+
+    const editorElement = editorRef.current;
+    if (editorElement) {
+      editorElement.addEventListener("click", handleImageClick);
+    }
+
+    return () => {
+      if (editorElement) {
+        editorElement.removeEventListener("click", handleImageClick);
+      }
+    };
+  }, []);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "/" && (e.metaKey || e.ctrlKey) && editor?.view) {
       e.preventDefault();
@@ -330,6 +385,50 @@ export default function Editor({
       setMenuPosition({ x, y });
       setShowCommands(!showCommands);
       return;
+    }
+
+    // Table shortcuts
+    if (editor?.isActive("table")) {
+      if (e.key === "Tab") {
+        if (e.shiftKey) {
+          e.preventDefault();
+          editor.chain().focus().goToPreviousCell().run();
+        } else {
+          e.preventDefault();
+          editor.chain().focus().goToNextCell().run();
+        }
+      }
+
+      // Add row/column shortcuts
+      if (e.metaKey || e.ctrlKey) {
+        if (e.key === "ArrowRight" && e.shiftKey) {
+          e.preventDefault();
+          editor.chain().focus().addColumnAfter().run();
+        } else if (e.key === "ArrowLeft" && e.shiftKey) {
+          e.preventDefault();
+          editor.chain().focus().addColumnBefore().run();
+        } else if (e.key === "ArrowDown" && e.shiftKey) {
+          e.preventDefault();
+          editor.chain().focus().addRowAfter().run();
+        } else if (e.key === "ArrowUp" && e.shiftKey) {
+          e.preventDefault();
+          editor.chain().focus().addRowBefore().run();
+        }
+      }
+
+      // Delete row/column shortcuts
+      if ((e.metaKey || e.ctrlKey) && e.altKey) {
+        if (e.key === "Backspace") {
+          e.preventDefault();
+          editor.chain().focus().deleteTable().run();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          editor.chain().focus().deleteRow().run();
+        } else if (e.key === "ArrowRight") {
+          e.preventDefault();
+          editor.chain().focus().deleteColumn().run();
+        }
+      }
     }
 
     // Allow normal '/' typing
@@ -392,9 +491,88 @@ export default function Editor({
       case "redo":
         editor.commands.redo();
         break;
+      case "underline":
+        editor.commands.toggleUnderline();
+        break;
+      case "table":
+        editor
+          .chain()
+          .focus()
+          .insertContent({
+            type: "table",
+            content: [
+              {
+                type: "tableRow",
+                content: [
+                  {
+                    type: "tableHeader",
+                    content: [
+                      {
+                        type: "paragraph",
+                        content: [{ type: "text", text: "Header 1" }],
+                      },
+                    ],
+                  },
+                  {
+                    type: "tableHeader",
+                    content: [
+                      {
+                        type: "paragraph",
+                        content: [{ type: "text", text: "Header 2" }],
+                      },
+                    ],
+                  },
+                  {
+                    type: "tableHeader",
+                    content: [
+                      {
+                        type: "paragraph",
+                        content: [{ type: "text", text: "Header 3" }],
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                type: "tableRow",
+                content: [
+                  { type: "tableCell", content: [{ type: "paragraph" }] },
+                  { type: "tableCell", content: [{ type: "paragraph" }] },
+                  { type: "tableCell", content: [{ type: "paragraph" }] },
+                ],
+              },
+              {
+                type: "tableRow",
+                content: [
+                  { type: "tableCell", content: [{ type: "paragraph" }] },
+                  { type: "tableCell", content: [{ type: "paragraph" }] },
+                  { type: "tableCell", content: [{ type: "paragraph" }] },
+                ],
+              },
+            ],
+          })
+          .run();
+        break;
+      case "addColumnBefore":
+        editor.chain().focus().addColumnBefore().run();
+        break;
+      case "addColumnAfter":
+        editor.chain().focus().addColumnAfter().run();
+        break;
+      case "addRowBefore":
+        editor.chain().focus().addRowBefore().run();
+        break;
+      case "addRowAfter":
+        editor.chain().focus().addRowAfter().run();
+        break;
+      case "deleteColumn":
+        editor.chain().focus().deleteColumn().run();
+        break;
+      case "deleteRow":
+        editor.chain().focus().deleteRow().run();
+        break;
     }
     setShowCommands(false);
-    // Focus the editor after command execution
     setTimeout(() => {
       editor.commands.focus();
     }, 0);
@@ -433,6 +611,7 @@ export default function Editor({
           margin: 0.75rem 0;
           max-width: 100%;
           width: fit-content;
+          cursor: zoom-in;
         }
 
         .resize-image {
@@ -440,11 +619,16 @@ export default function Editor({
           max-width: 100%;
           height: auto;
           margin: 0;
+          transition: transform 0.2s ease;
+        }
+
+        .image-resizer:hover .resize-image {
+          transform: scale(1.02);
         }
 
         .resize-handle {
-          width: 8px;
-          height: 8px;
+          width: 12px;
+          height: 12px;
           border-radius: 2px;
           background-color: rgb(59, 130, 246);
           border: 1.5px solid #fff;
@@ -460,6 +644,21 @@ export default function Editor({
 
         .image-resizer:hover .resize-handle {
           opacity: 1;
+        }
+
+        @keyframes scale-up {
+          from {
+            transform: scale(0.95);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+
+        .animate-scale-up {
+          animation: scale-up 0.2s ease-out forwards;
         }
 
         .link-preview {
@@ -634,6 +833,56 @@ export default function Editor({
           color: #111827 !important;
           font-weight: 500 !important;
         }
+
+        .ProseMirror table {
+          border-collapse: collapse;
+          margin: 0;
+          overflow: hidden;
+          table-layout: fixed;
+          width: 100%;
+        }
+
+        .ProseMirror td,
+        .ProseMirror th {
+          border: 2px solid #ced4da;
+          box-sizing: border-box;
+          min-width: 1em;
+          padding: 3px 5px;
+          position: relative;
+          vertical-align: top;
+        }
+
+        .ProseMirror th {
+          background-color: #f8f9fa;
+          font-weight: bold;
+          text-align: left;
+        }
+
+        .ProseMirror .selectedCell:after {
+          background: rgba(200, 200, 255, 0.4);
+          content: "";
+          left: 0;
+          right: 0;
+          top: 0;
+          bottom: 0;
+          pointer-events: none;
+          position: absolute;
+          z-index: 2;
+        }
+
+        .ProseMirror .column-resize-handle {
+          background-color: #adf;
+          bottom: -2px;
+          position: absolute;
+          right: -2px;
+          pointer-events: none;
+          top: 0;
+          width: 4px;
+        }
+
+        .ProseMirror p {
+          margin: 0;
+        }
       `}</style>
       <EditorContent editor={editor} className="w-full h-full" />
 
@@ -643,6 +892,44 @@ export default function Editor({
           onCommand={handleCommand}
           position={menuPosition}
         />
+      )}
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[1000] transition-opacity duration-300"
+            onClick={() => setPreviewImage(null)}
+          />
+          <div className="fixed inset-0 z-[1001] flex items-center justify-center p-4">
+            <div className="relative max-w-[90vw] max-h-[90vh] animate-scale-up">
+              <img
+                src={previewImage}
+                alt="Preview"
+                className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              />
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
