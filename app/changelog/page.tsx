@@ -161,7 +161,7 @@ export default async function ChangelogPage() {
           {/* Quick Links Section */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <a
-              href="https://github.com/shubhank-saxena/snippet-today"
+              href="https://github.com/avayyyyyyy/snippet.today"
               target="_blank"
               rel="noopener noreferrer"
               className="group p-4 bg-white rounded-xl border border-[#eaeaea] hover:border-[#666666] hover:shadow-sm transition-all"
