@@ -339,25 +339,12 @@ export default function Home() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showExportPopup, setShowExportPopup] = useState(false);
   const [showChatPopup, setShowChatPopup] = useState(false);
-  const [openAIKey, setOpenAIKey] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("openai-api-key") || "";
-    }
-    return "";
-  });
-  const [messages, setMessages] = useState<Message[]>(() => {
-    if (typeof window !== "undefined") {
-      const savedMessages = localStorage.getItem(`snippet-chat-${activeDocId}`);
-      return savedMessages ? JSON.parse(savedMessages) : [];
-    }
-    return [];
-  });
+  const [openAIKey, setOpenAIKey] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [starsCount, setStarsCount] = useState<number | null>(null);
-  const [showWelcomeModal, setShowWelcomeModal] = useState(
-    !localStorage.getItem("snippet-welcome-shown")
-  );
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -366,6 +353,15 @@ export default function Home() {
   const [peer, setPeer] = useState<Peer | null>(null);
   const [connectionStatus, setConnectionStatus] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [sharedContent, setSharedContent] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setSharedContent(
+        localStorage.getItem(`snippet-content-${activeDocId}`) || ""
+      );
+    }
+  }, [activeDocId]);
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -492,6 +488,8 @@ export default function Home() {
   };
 
   const exportAsMarkdown = () => {
+    if (typeof window === "undefined") return;
+
     const content = localStorage.getItem(`snippet-content-${activeDocId}`);
     if (content) {
       // Convert HTML to Markdown
@@ -692,20 +690,21 @@ export default function Home() {
   useEffect(() => {
     // Load documents from localStorage on initial render
     const loadDocuments = () => {
-      const savedDocs = localStorage.getItem("snippet-documents");
-      if (savedDocs) {
-        const parsedDocs = JSON.parse(savedDocs);
-        setDocuments(parsedDocs);
+      if (typeof window !== "undefined") {
+        const savedDocs = localStorage.getItem("snippet-documents");
+        if (savedDocs) {
+          const parsedDocs = JSON.parse(savedDocs);
+          setDocuments(parsedDocs);
 
-        // Set active document
-        const lastActiveDoc = localStorage.getItem("snippet-active-doc");
-        if (
-          lastActiveDoc &&
-          parsedDocs.find((doc: Document) => doc.id === lastActiveDoc)
-        ) {
-          setActiveDocId(lastActiveDoc);
-        } else {
-          setActiveDocId(parsedDocs[0].id);
+          const lastActiveDoc = localStorage.getItem("snippet-active-doc");
+          if (
+            lastActiveDoc &&
+            parsedDocs.find((doc: Document) => doc.id === lastActiveDoc)
+          ) {
+            setActiveDocId(lastActiveDoc);
+          } else {
+            setActiveDocId(parsedDocs[0].id);
+          }
         }
       }
     };
@@ -713,23 +712,24 @@ export default function Home() {
     loadDocuments();
   }, []);
 
-  // Add effect to save documents to localStorage whenever they change
+  // Update document saving effect
   useEffect(() => {
-    localStorage.setItem("snippet-documents", JSON.stringify(documents));
+    if (typeof window !== "undefined") {
+      localStorage.setItem("snippet-documents", JSON.stringify(documents));
+    }
   }, [documents]);
 
-  // Add effect to save active document ID
+  // Update active document saving effect
   useEffect(() => {
-    localStorage.setItem("snippet-active-doc", activeDocId);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("snippet-active-doc", activeDocId);
+    }
   }, [activeDocId]);
 
   // Move the welcome modal check to a useEffect
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const hasSeenWelcome = localStorage.getItem("snippet-welcome-shown");
-      if (!hasSeenWelcome) {
-        setShowWelcomeModal(true);
-      }
+      setShowWelcomeModal(!localStorage.getItem("snippet-welcome-shown"));
     }
   }, []);
 
@@ -805,6 +805,28 @@ export default function Home() {
     handleDragReorder(draggedId, id);
     setIsDragging(false);
   };
+
+  // Add useEffect for openAIKey initialization
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOpenAIKey(localStorage.getItem("openai-api-key") || "");
+    }
+  }, []);
+
+  // Add useEffect for messages initialization
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedMessages = localStorage.getItem(`snippet-chat-${activeDocId}`);
+      setMessages(savedMessages ? JSON.parse(savedMessages) : []);
+    }
+  }, [activeDocId]);
+
+  // Add useEffect for welcome modal initialization
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setShowWelcomeModal(!localStorage.getItem("snippet-welcome-shown"));
+    }
+  }, []);
 
   return (
     <div className="h-screen flex flex-col bg-white">
@@ -1481,7 +1503,7 @@ export default function Home() {
       {/* Share Modal */}
       <ShareQRCode
         documentId={activeDocId}
-        content={localStorage.getItem(`snippet-content-${activeDocId}`) || ""}
+        content={sharedContent}
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
       />
