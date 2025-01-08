@@ -9,6 +9,11 @@ interface ShareQRCodeProps {
   onClose: () => void;
 }
 
+const domain =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:3000"
+    : "https://snippet.today";
+
 export default function ShareQRCode({
   documentId,
   content,
@@ -64,7 +69,7 @@ export default function ShareQRCode({
 
   if (!isOpen) return null;
 
-  const shareUrl = `${window.location.origin}/receive?peerId=${peerId}`;
+  const shareUrl = `${domain}/receive?peerId=${peerId}`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
