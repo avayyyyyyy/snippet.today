@@ -9,10 +9,7 @@ interface ShareQRCodeProps {
   onClose: () => void;
 }
 
-const domain =
-  process.env.NODE_ENV === "development"
-    ? "http://localhost:3000"
-    : "https://snippet.today";
+const domain = "https://snippet.today";
 
 export default function ShareQRCode({
   documentId,
